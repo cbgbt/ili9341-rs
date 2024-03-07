@@ -1,5 +1,6 @@
 use crate::Ili9341;
 use embedded_graphics_core::{
+    draw_target::AsyncDrawTarget,
     pixelcolor::{raw::RawU16, Rgb565},
     prelude::*,
     primitives::Rectangle,
@@ -78,5 +79,27 @@ where
 
     fn clear(&mut self, color: Self::Color) -> Result<(), Self::Error> {
         self.clear_screen(RawU16::from(color).into_inner())
+    }
+}
+
+impl<IFACE, RESET> AsyncDrawTarget for Ili9341<IFACE, RESET>
+where
+    IFACE: display_interface::AsyncWriteOnlyDataCommand,
+{
+    type Color = Rgb565;
+    type Error = display_interface::DisplayError;
+    async fn draw_iter_async<I>(&mut self, pixels: I) -> Result<(), Self::Error>
+    where
+        I: IntoIterator<Item = Pixel<Self::Color>>,
+    {
+        for Pixel(point, color) in pixels {
+            if self.bounding_box().contains(point) {
+                let x = point.x as u16;
+                let y = point.y as u16;
+                let color = RawU16::from(color).into_inner();
+                self.draw_raw_slice_async(x, y, x, y, &[color])?.await;
+            }
+        }
+        Ok(())
     }
 }
