@@ -193,6 +193,69 @@ where
     }
 }
 
+impl<IFACE, RESET> Ili9341<IFACE, RESET>
+where
+    IFACE: AsyncWriteOnlyDataCommand,
+    RESET: OutputPin,
+{
+    pub async fn new_async<DELAY, SIZE, MODE>(
+        interface: IFACE,
+        reset: RESET,
+        delay: &mut DELAY,
+        mode: MODE,
+        _display_size: SIZE,
+    ) -> Result<Self>
+    where
+        DELAY: DelayNs,
+        SIZE: DisplaySize,
+        MODE: Mode,
+    {
+        let mut ili9341 = Ili9341 {
+            interface,
+            reset,
+            width: SIZE::WIDTH,
+            height: SIZE::HEIGHT,
+            landscape: false,
+        };
+
+        // Do hardware reset by holding reset low for at least 10us
+        ili9341.reset.set_low().map_err(|_| DisplayError::RSError)?;
+        let _ = delay.delay_ms(1);
+        // Set high for normal operation
+        ili9341
+            .reset
+            .set_high()
+            .map_err(|_| DisplayError::RSError)?;
+
+        // Wait 5ms after reset before sending commands
+        // and 120ms before sending Sleep Out
+        let _ = delay.delay_ms(5);
+
+        // Do software reset
+        ili9341.command_async(Command::SoftwareReset, &[]).await?;
+
+        // Wait 5ms after reset before sending commands
+        // and 120ms before sending Sleep Out
+        let _ = delay.delay_ms(120);
+
+        ili9341.set_orientation_async(mode).await?;
+
+        // Set pixel format to 16 bits per pixel
+        ili9341
+            .command_async(Command::PixelFormatSet, &[0x55])
+            .await?;
+
+        ili9341.sleep_mode_async(ModeState::Off).await?;
+
+        // Wait 5ms after Sleep Out before sending commands
+        let _ = delay.delay_ms(5);
+
+        ili9341.display_mode_async(ModeState::On).await?;
+
+        Ok(ili9341)
+    }
+}
+
 impl<IFACE: AsyncWriteOnlyDataCommand, RESET> Ili9341<IFACE, RESET> {
     async fn command_async(&mut self, cmd: Command, args: &[u8]) -> Result {
         self.interface
