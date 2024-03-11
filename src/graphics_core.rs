@@ -29,7 +29,7 @@ where
                 let x = point.x as u16;
                 let y = point.y as u16;
                 let color = RawU16::from(color).into_inner();
-                self.draw_raw_slice(x, y, x, y, &[color])?;
+                self.draw_raw_slice(x, y, x, y, &[u16::from_be(color)])?;
             }
         }
         Ok(())
@@ -97,7 +97,8 @@ where
                 let x = point.x as u16;
                 let y = point.y as u16;
                 let color = RawU16::from(color).into_inner();
-                self.draw_raw_slice_async(x, y, x, y, &[color]).await?;
+                self.draw_raw_slice_async(x, y, x, y, &[u16::from_be(color)])
+                    .await?;
             }
         }
         Ok(())
