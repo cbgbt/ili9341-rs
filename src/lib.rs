@@ -272,12 +272,12 @@ impl<IFACE: AsyncWriteOnlyDataCommand, RESET> Ili9341<IFACE, RESET> {
             .await
     }
 
-    async fn write_slice_async(&mut self, data: &[u16]) -> Result {
+    pub async fn write_slice_async(&mut self, data: &[u16]) -> Result {
         self.command_async(Command::MemoryWrite, &[]).await?;
         self.interface.send_data(DataFormat::U16(data)).await
     }
 
-    async fn set_window_async(&mut self, x0: u16, y0: u16, x1: u16, y1: u16) -> Result {
+    pub async fn set_window_async(&mut self, x0: u16, y0: u16, x1: u16, y1: u16) -> Result {
         self.command_async(
             Command::ColumnAddressSet,
             &[
