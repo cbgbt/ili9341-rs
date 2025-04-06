@@ -19,8 +19,6 @@ embedded-hal = "1.0.0"
 [dependencies.embedded-graphics-core]
 optional = true
 version = "0.4"
-# TODO: remove the reference to my patched version
-path = "../embedded-graphics/core/"
 features = ["async_draw"]
 
 [dev-dependencies]
